@@ -66,8 +66,11 @@ int x=44;
 int y=1;
 
 void loop() {
+  //LoRaReceive();
+  //screen();
+
+//void LoRaReceive
   int packetSize = LoRa.parsePacket();
- 
   if (packetSize) {
     Serial.print("Received packet '");
     String receivedString = "";
@@ -75,10 +78,11 @@ void loop() {
       receivedString += (char)LoRa.read();
     }
     Serial.print(receivedString);
-
     Serial.print("' with RSSI ");
     Serial.print(LoRa.packetRssi());
     Serial.print(" --- ");
+
+//void screen
     display.setTextColor(WHITE);
     display.setCursor(1,y);
     display.print("B");
@@ -86,6 +90,7 @@ void loop() {
     display.setCursor(x,y);
     display.print(spreadingFactors[currentSpreadingFactorIndex]);
     display.display();
+    
      //Increment indexes to cycle through bandwidths and spreading factors.
     currentSpreadingFactorIndex++;
     if(currentSpreadingFactorIndex >= spreadingFactorCount){
@@ -94,7 +99,6 @@ void loop() {
       y=y+8;
       if(currentBandwidthIndex >= bandwidthCount){
         currentBandwidthIndex = 0;
-  
       }
     }
     x=x+14;
