@@ -23,15 +23,20 @@ Adafruit_SSD1306 display(OLED_RESET);
 #define SS 15
 #define RST -1 // Optional, connect to GPIO if used
 #define DIO0 16
+#define codingrate 7 //5 to 8
+#define transmitpower 2 //2 to 17 db
 
 // LoRa settings
 long frequency = 433E6; // Match the sender frequency
-int bandwidths[] = {62.5E3, 125E3, 250E3, 500E3};
+int bandwidths[] = {7.8E3, 10.4e3, 62.5E3, 125E3, 250E3, 500E3};
 int spreadingFactors[] = {12, 11, 10, 9, 8, 7};
 int bandwidthCount = sizeof(bandwidths) / sizeof(bandwidths[0]);
 int spreadingFactorCount = sizeof(spreadingFactors) / sizeof(spreadingFactors[0]);
 int currentBandwidthIndex = 0;
 int currentSpreadingFactorIndex = 0;
+
+int wait = 1500; //wait time in ms for lora signal
+int waitcount = 0 ;
 
 void setup() {
   Serial.begin(115200);
@@ -54,6 +59,8 @@ void setup() {
   Serial.println("LoRa initialized successfully!");
   LoRa.setSignalBandwidth(bandwidths[currentBandwidthIndex]);
   LoRa.setSpreadingFactor(spreadingFactors[currentSpreadingFactorIndex]);
+  LoRa.setCodingRate4(codingrate);
+  LoRa.setTxPower(transmitpower);
 
   Serial.print("Initial Bandwidth: ");
   Serial.print(bandwidths[currentBandwidthIndex] / 1000.0);
@@ -65,33 +72,32 @@ void setup() {
 int x=44;
 int y=1;
 
-void loop() {
-  //LoRaReceive();
-  //screen();
 
-//void LoRaReceive
-  int packetSize = LoRa.parsePacket();
-  if (packetSize) {
-    Serial.print("Received packet '");
-    String receivedString = "";
-    while (LoRa.available()) {
-      receivedString += (char)LoRa.read();
+void LoRaReceive(){
+  while (waitcount < wait){
+    int packetSize = LoRa.parsePacket();
+    if (packetSize) {
+      Serial.print("Received packet '");
+      String receivedString = "";
+      while (LoRa.available()) {
+        receivedString += (char)LoRa.read();
+      }
+      Serial.print(receivedString);
+      Serial.print("' with RSSI ");
+      Serial.print(LoRa.packetRssi());
+      Serial.print(" ");
+      //bwsf();
+      screen();
     }
-    Serial.print(receivedString);
-    Serial.print("' with RSSI ");
-    Serial.print(LoRa.packetRssi());
-    Serial.print(" --- ");
+    delay(1);
+    waitcount=waitcount+1;
+    //Serial.print(waitcount);
+  }
+}
 
-//void screen
-    display.setTextColor(WHITE);
-    display.setCursor(1,y);
-    display.print("B");
-    display.print(bandwidths[currentBandwidthIndex] / 1000.0);
-    display.setCursor(x,y);
-    display.print(spreadingFactors[currentSpreadingFactorIndex]);
-    display.display();
-    
-     //Increment indexes to cycle through bandwidths and spreading factors.
+void bwsf(){
+  waitcount=0;
+//Increment indexes to cycle through bandwidths and spreading factors.
     currentSpreadingFactorIndex++;
     if(currentSpreadingFactorIndex >= spreadingFactorCount){
       currentSpreadingFactorIndex = 0;
@@ -102,28 +108,48 @@ void loop() {
       }
     }
     x=x+14;
+    
+    
     LoRa.setSignalBandwidth(bandwidths[currentBandwidthIndex]);
     LoRa.setSpreadingFactor(spreadingFactors[currentSpreadingFactorIndex]);
   
-    Serial.print("Next Bandwidth: ");
+    Serial.print("Bandwidth: ");
     Serial.print(bandwidths[currentBandwidthIndex] / 1000.0);
     Serial.print(" kHz, Spreading Factor: ");
-    Serial.println(spreadingFactors[currentSpreadingFactorIndex]);
+    Serial.print(spreadingFactors[currentSpreadingFactorIndex]);
    
-    Serial.print("x,y:");
+    Serial.print(" x,y:");
     Serial.print(x);
     Serial.print(",");
     Serial.println(y);
-    if (y>31){
+    if (y>47){
       y=1;
-      delay(5000);
-      display.clearDisplay();
-      display.display();
+      //delay(500);
+      //display.clearDisplay();
+      //display.display();
     }
     if (x>121){
       x=44;
       
     }
-  }
-  //Serial.print(".");
+    //LoRaReceive();
+    //screen();
+}
+
+void screen(){
+    display.setTextColor(WHITE);
+    display.setCursor(1,y);
+    display.print("B");
+    display.print(bandwidths[currentBandwidthIndex] / 1000.0);
+    display.setCursor(x,y);
+    display.print(spreadingFactors[currentSpreadingFactorIndex]);
+    display.display();  
+}
+
+
+void loop() {
+  LoRaReceive();
+  bwsf();
+  //screen();
+  
 }
