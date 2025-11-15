@@ -134,7 +134,7 @@ void bwsf(){
     Serial.print(x);
     Serial.print(",");
     Serial.println(y);
-    String Debugstring("x"+String(x)+" y "+String(y)+" wait "+waita+" ");
+    String Debugstring("x"+String(x)+" y "+String(y)+" wait "+waita+" dot "+screenreceived);
     Serial.print(Debugstring);
     if (x>90){
       x=46;
@@ -181,7 +181,7 @@ void screendot(){
   display.setCursor(x,y);
   display.print(".");
   display.display();
-  screenreceived = 0;
+  
 }
 
 
@@ -193,6 +193,7 @@ void clearscreen(){
 
 
 void loop() {
+  screenreceived = 0;
   screenbw();
   LoRaReceive();
   if (screenreceived==0){ 
