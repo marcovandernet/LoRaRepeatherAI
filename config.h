@@ -5,6 +5,16 @@
 const bool ENABLE_GPS = true;
 const bool ENABLE_OLED = true;
 const bool ENABLE_TEMPERATURE_SENSOR = true;
+const bool ENABLE_NAVIGATION = true; // Convert received coordinates to distance/direction
+
+// Choose which information the OLED prioritizes.
+enum DisplayLayout {
+  LAYOUT_REPEATER,
+  LAYOUT_REPEATER_WITH_NAVIGATION,
+  LAYOUT_NAVIGATION,
+  LAYOUT_REPEATER_WITH_TEMPERATURE
+};
+const DisplayLayout DISPLAY_LAYOUT = LAYOUT_REPEATER_WITH_NAVIGATION;
 
 // Node and mesh configuration
 const char MY_NODE_ID[] = "0001";   // Unique four-character ID for this node
@@ -15,6 +25,8 @@ const int NETWORK_HOPS = 3;         // Maximum number of mesh hops
 // OLED configuration
 const int SCREEN_WIDTH = 128;
 const int SCREEN_HEIGHT = 64;
+const int OLED_YELLOW_HEIGHT = 16; // Two 8-pixel text rows on the dual-color panel
+const int OLED_BLUE_CONTENT_TOP = 20;
 const int OLED_RESET = -1;
 const uint8_t SCREEN_ADDRESS = 0x3C;
 

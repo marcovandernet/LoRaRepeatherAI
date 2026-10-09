@@ -3,6 +3,7 @@
 #include <LoRa.h>
 #include "config.h"
 #include "GPS.h"
+#include "Navigation.h"
 #include "OLED.h"
 #include "TemperatureSensor.h"
 
@@ -40,8 +41,12 @@ float huidigeTemperatuur = 0.0;
 String rxDisplayType = "GEEN"; 
 String rxAfzender   = "";
 String rxLine1      = "";
+String lastGPSNodeID = "";
+String lastGPSNodeCoordinates = "";
+bool hasLastGPSNode = false;
 unsigned long displayReceivedTimeout = 0;
 bool tonenOntvangenData = false;
+unsigned long lastNavigationDisplayUpdate = 0;
 
 // Functie-declaraties (Prototypes)
 void updateOLEDDisplay(String statusText, String detailText);
@@ -88,6 +93,15 @@ void setup() {
 
 void loop() {
   updateGPS();
+
+  // Refresh the saved node's relative position as this node's GPS fix changes.
+  if (DISPLAY_LAYOUT == LAYOUT_NAVIGATION && hasLastGPSNode &&
+      millis() - lastNavigationDisplayUpdate >= 1000) {
+    lastNavigationDisplayUpdate = millis();
+    if (displayBeschikbaar) {
+      updateOLEDDisplay("NAVIGATION", "Laatste GPS-node");
+    }
+  }
 
   // 1. Luister naar binnenkomende LoRa pakketten
   if (LoRaReceive()) {
@@ -246,7 +260,14 @@ void parsePayloadData(String senderID, String type, String payload) {
     rxLine1 = "Temp: " + payload + " C";
   } else if (type == "4") {
     rxDisplayType = "GPS";
-    rxLine1 = describeRemoteGPSLocation(payload);
+    lastGPSNodeID = senderID;
+    lastGPSNodeCoordinates = payload;
+    hasLastGPSNode = true;
+    double localLatitude = 0.0;
+    double localLongitude = 0.0;
+    bool localCoordinatesValid = getGPSCoordinates(localLatitude, localLongitude);
+    rxLine1 = formatRelativePosition(payload, localCoordinatesValid,
+                                     localLatitude, localLongitude);
   } else {
     rxDisplayType = "DATA";
     rxLine1 = payload;
@@ -254,8 +275,20 @@ void parsePayloadData(String senderID, String type, String payload) {
 }
 
 void updateOLEDDisplay(String statusText, String detailText) {
+  double localLatitude = 0.0;
+  double localLongitude = 0.0;
+  bool localCoordinatesValid = getGPSCoordinates(localLatitude, localLongitude);
+  String lastGPSNodePosition = hasLastGPSNode
+      ? formatRelativePosition(lastGPSNodeCoordinates, localCoordinatesValid,
+                               localLatitude, localLongitude)
+      : "";
+  String displayRxLine = (rxDisplayType == "GPS" && hasLastGPSNode)
+      ? lastGPSNodePosition
+      : rxLine1;
+
   renderOLEDDisplay(statusText, detailText, tonenOntvangenData,
-                    rxAfzender, rxDisplayType, rxLine1, RSSI, SNR,
+                    rxAfzender, rxDisplayType, displayRxLine, RSSI, SNR,
                     ds18b20Beschikbaar, huidigeTemperatuur,
-                    isGPSAvailable(), hasGPSFix());
+                    isGPSAvailable(), hasGPSFix(), hasLastGPSNode,
+                    lastGPSNodeID, lastGPSNodePosition);
 } 

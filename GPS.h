@@ -8,7 +8,7 @@ bool beginGPS();
 void updateGPS();
 bool isGPSAvailable();
 bool hasGPSFix();
+bool getGPSCoordinates(double &latitude, double &longitude);
 String makeGPSLocationPayload();
-String describeRemoteGPSLocation(const String &payload);
 
 #endif // LORA_REPEATHER_GPS_H

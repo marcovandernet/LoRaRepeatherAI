@@ -8,6 +8,8 @@ void renderOLEDDisplay(const String &statusText, const String &detailText,
                        bool showingReceivedData, const String &rxSender,
                        const String &rxType, const String &rxLine,
                        int rssi, int snr, bool temperatureAvailable,
-                       float temperatureC, bool gpsAvailable, bool gpsFix);
+                       float temperatureC, bool gpsAvailable, bool gpsFix,
+                       bool hasLastGPSNode, const String &lastGPSNodeID,
+                       const String &lastGPSNodePosition);
 
 #endif // LORA_REPEATHER_OLED_H

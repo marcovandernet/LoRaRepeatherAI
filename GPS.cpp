@@ -68,35 +68,24 @@ bool hasGPSFix() {
   return gpsAvailable && gps.location.isValid();
 }
 
+bool getGPSCoordinates(double &latitude, double &longitude) {
+  if (!hasGPSFix()) return false;
+  latitude = gps.location.lat();
+  longitude = gps.location.lng();
+  return true;
+}
+
 String makeGPSLocationPayload() {
-  if (!hasGPSFix()) return "";
+  double latitude;
+  double longitude;
+  if (!getGPSCoordinates(latitude, longitude)) return "";
 
   char latBuf[16];
   char lngBuf[16];
-  dtostrf(gps.location.lat(), 2, 6, latBuf);
-  dtostrf(gps.location.lng(), 2, 6, lngBuf);
+  dtostrf(latitude, 2, 6, latBuf);
+  dtostrf(longitude, 2, 6, lngBuf);
 
   String payload = String(latBuf) + "," + String(lngBuf);
   payload.trim();
   return payload;
-}
-
-String describeRemoteGPSLocation(const String &payload) {
-  int commaIndex = payload.indexOf(',');
-  if (commaIndex <= 0) return payload;
-
-  double otherLat = payload.substring(0, commaIndex).toDouble();
-  double otherLng = payload.substring(commaIndex + 1).toDouble();
-  if (!hasGPSFix()) return "Wacht op eigen GPS...";
-
-  double distance = gps.distanceBetween(
-      gps.location.lat(), gps.location.lng(), otherLat, otherLng);
-  double bearing = gps.courseTo(
-      gps.location.lat(), gps.location.lng(), otherLat, otherLng);
-  String direction = gps.cardinal(bearing);
-
-  if (distance < 1000) {
-    return String(distance, 0) + "m " + direction;
-  }
-  return String(distance / 1000.0, 1) + "km " + direction;
 }

@@ -28,42 +28,69 @@ void renderOLEDDisplay(const String &statusText, const String &detailText,
                        bool showingReceivedData, const String &rxSender,
                        const String &rxType, const String &rxLine,
                        int rssi, int snr, bool temperatureAvailable,
-                       float temperatureC, bool gpsAvailable, bool gpsFix) {
+                       float temperatureC, bool gpsAvailable, bool gpsFix,
+                       bool hasLastGPSNode, const String &lastGPSNodeID,
+                       const String &lastGPSNodePosition) {
   if (!ENABLE_OLED || !displayAvailable) return;
 
   display.clearDisplay();
   display.setTextColor(WHITE);
   display.setTextSize(1);
-  display.setCursor(0, 0);
-  display.print(String("NODE:") + MY_NODE_ID);
-  display.setCursor(64, 0);
-  display.print("[" + statusText + "]");
-  display.drawFastHLine(0, 10, SCREEN_WIDTH, WHITE);
+  display.setTextWrap(false);
 
-  if (showingReceivedData) {
-    display.setCursor(0, 16);
+  // The display's physical color boundary is after the first 16 pixels.
+  // Keep both yellow rows for node and communication status.
+  display.setCursor(0, 0);
+  display.print(String("NODE:") + MY_NODE_ID + " [" + statusText + "]");
+  display.setCursor(0, 8);
+  display.print(detailText);
+  display.drawFastHLine(0, OLED_YELLOW_HEIGHT, SCREEN_WIDTH, WHITE);
+
+  if (DISPLAY_LAYOUT == LAYOUT_NAVIGATION) {
+    display.setCursor(0, OLED_BLUE_CONTENT_TOP);
+    if (hasLastGPSNode) {
+      display.print("Laatste GPS-node: " + lastGPSNodeID);
+      display.setCursor(0, 36);
+      display.print(lastGPSNodePosition);
+      display.setCursor(0, 52);
+      display.print("RSSI: " + String(rssi) + " SNR: " + String(snr));
+    } else {
+      display.print("Nog geen GPS-node");
+      display.setCursor(0, 36);
+      display.print(gpsFix ? "Eigen GPS: FIX OK" : "Wacht op GPS-node");
+    }
+  } else if (showingReceivedData) {
+    display.setCursor(0, OLED_BLUE_CONTENT_TOP);
     display.print("RX Van: " + rxSender + " (" + rxType + ")");
-    display.setCursor(0, 32);
+    display.setCursor(0, 36);
     display.print(rxLine);
     display.setCursor(0, 52);
-    display.print("RSSI: " + String(rssi) + " SNR: " + String(snr));
+    if (DISPLAY_LAYOUT == LAYOUT_REPEATER_WITH_TEMPERATURE && temperatureAvailable) {
+      display.print("Temp: " + String(temperatureC, 1) + " C");
+    } else {
+      display.print("RSSI: " + String(rssi) + " SNR: " + String(snr));
+    }
   } else {
-    display.setCursor(0, 16);
-    display.print(detailText);
-    display.setCursor(0, 32);
-    if (temperatureAvailable) {
+    display.setCursor(0, OLED_BLUE_CONTENT_TOP);
+    if (DISPLAY_LAYOUT == LAYOUT_REPEATER_WITH_NAVIGATION && hasLastGPSNode) {
+      display.print("GPS " + lastGPSNodeID + ": " + lastGPSNodePosition);
+    } else if (DISPLAY_LAYOUT == LAYOUT_REPEATER_WITH_TEMPERATURE && temperatureAvailable) {
+      display.print("Lokaal Temp: " + String(temperatureC, 1) + "C");
+    } else if (temperatureAvailable && DISPLAY_LAYOUT == LAYOUT_REPEATER) {
       display.print("Lokaal Temp: " + String(temperatureC, 1) + "C");
     } else {
-      display.print("Geen temp sensor");
+      display.print(DISPLAY_LAYOUT == LAYOUT_REPEATER_WITH_NAVIGATION
+                        ? "Nog geen GPS-node"
+                        : "Repeater actief");
     }
 
-    display.setCursor(0, 48);
-    if (gpsFix) {
-      display.print("GPS: FIX OK");
-    } else if (gpsAvailable) {
-      display.print("GPS: Zoeken naar sat.");
-    } else {
-      display.print("GPS: Niet verbonden");
+    display.setCursor(0, 36);
+    if (DISPLAY_LAYOUT == LAYOUT_REPEATER_WITH_NAVIGATION) {
+      display.print(gpsFix ? "Eigen GPS: FIX OK" : "Eigen GPS: zoeken");
+    } else if (DISPLAY_LAYOUT == LAYOUT_REPEATER_WITH_TEMPERATURE) {
+      display.print(temperatureAvailable ? "Temperatuursensor OK" : "Geen temp sensor");
+    } else if (DISPLAY_LAYOUT == LAYOUT_REPEATER && gpsAvailable) {
+      display.print(gpsFix ? "GPS: FIX OK" : "GPS: Zoeken naar sat.");
     }
   }
 
