@@ -7,14 +7,17 @@ const bool ENABLE_OLED = true;
 const bool ENABLE_TEMPERATURE_SENSOR = true;
 const bool ENABLE_NAVIGATION = true; // Convert received coordinates to distance/direction
 
-// Choose which information the OLED prioritizes.
+// Select exactly one OLED layout: leave its #define uncommented and comment out
+// the other three. The current selection is repeater with navigation.
 enum DisplayLayout {
   LAYOUT_REPEATER,
   LAYOUT_REPEATER_WITH_NAVIGATION,
-  LAYOUT_NAVIGATION,
   LAYOUT_REPEATER_WITH_TEMPERATURE
 };
-const DisplayLayout DISPLAY_LAYOUT = LAYOUT_REPEATER_WITH_NAVIGATION;
+
+#define DISPLAY_LAYOUT LAYOUT_REPEATER_WITH_NAVIGATION
+// #define DISPLAY_LAYOUT LAYOUT_REPEATER
+// #define DISPLAY_LAYOUT LAYOUT_REPEATER_WITH_TEMPERATURE
 
 // Node and mesh configuration
 const char MY_NODE_ID[] = "0001";   // Unique four-character ID for this node

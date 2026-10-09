@@ -46,20 +46,7 @@ void renderOLEDDisplay(const String &statusText, const String &detailText,
   display.print(detailText);
   display.drawFastHLine(0, OLED_YELLOW_HEIGHT, SCREEN_WIDTH, WHITE);
 
-  if (DISPLAY_LAYOUT == LAYOUT_NAVIGATION) {
-    display.setCursor(0, OLED_BLUE_CONTENT_TOP);
-    if (hasLastGPSNode) {
-      display.print("Laatste GPS-node: " + lastGPSNodeID);
-      display.setCursor(0, 36);
-      display.print(lastGPSNodePosition);
-      display.setCursor(0, 52);
-      display.print("RSSI: " + String(rssi) + " SNR: " + String(snr));
-    } else {
-      display.print("Nog geen GPS-node");
-      display.setCursor(0, 36);
-      display.print(gpsFix ? "Eigen GPS: FIX OK" : "Wacht op GPS-node");
-    }
-  } else if (showingReceivedData) {
+  if (showingReceivedData) {
     display.setCursor(0, OLED_BLUE_CONTENT_TOP);
     display.print("RX Van: " + rxSender + " (" + rxType + ")");
     display.setCursor(0, 36);

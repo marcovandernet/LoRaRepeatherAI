@@ -46,7 +46,6 @@ String lastGPSNodeCoordinates = "";
 bool hasLastGPSNode = false;
 unsigned long displayReceivedTimeout = 0;
 bool tonenOntvangenData = false;
-unsigned long lastNavigationDisplayUpdate = 0;
 
 // Functie-declaraties (Prototypes)
 void updateOLEDDisplay(String statusText, String detailText);
@@ -93,15 +92,6 @@ void setup() {
 
 void loop() {
   updateGPS();
-
-  // Refresh the saved node's relative position as this node's GPS fix changes.
-  if (DISPLAY_LAYOUT == LAYOUT_NAVIGATION && hasLastGPSNode &&
-      millis() - lastNavigationDisplayUpdate >= 1000) {
-    lastNavigationDisplayUpdate = millis();
-    if (displayBeschikbaar) {
-      updateOLEDDisplay("NAVIGATION", "Laatste GPS-node");
-    }
-  }
 
   // 1. Luister naar binnenkomende LoRa pakketten
   if (LoRaReceive()) {
