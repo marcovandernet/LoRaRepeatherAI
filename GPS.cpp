@@ -6,6 +6,19 @@
 namespace {
 TinyGPSPlus gps;
 bool gpsAvailable = false;
+bool cachedCoordinatesAvailable = false;
+double cachedLatitude = 0.0;
+double cachedLongitude = 0.0;
+unsigned long lastValidFixTimestamp = 0;
+
+void expireCachedCoordinates() {
+  if (cachedCoordinatesAvailable &&
+      millis() - lastValidFixTimestamp >= GPS_COORDINATE_MAX_AGE_MS) {
+    cachedLatitude = 0.0;
+    cachedLongitude = 0.0;
+    cachedCoordinatesAvailable = false;
+  }
+}
 
 void configureGPS() {
   delay(500);
@@ -54,9 +67,17 @@ bool beginGPS() {
 }
 
 void updateGPS() {
+  expireCachedCoordinates();
   if (!gpsAvailable) return;
+
   while (Serial.available() > 0) {
     gps.encode(Serial.read());
+    if (gps.location.isUpdated() && gps.location.isValid()) {
+      cachedLatitude = gps.location.lat();
+      cachedLongitude = gps.location.lng();
+      lastValidFixTimestamp = millis();
+      cachedCoordinatesAvailable = true;
+    }
   }
 }
 
@@ -65,13 +86,19 @@ bool isGPSAvailable() {
 }
 
 bool hasGPSFix() {
-  return gpsAvailable && gps.location.isValid();
+  expireCachedCoordinates();
+  return gpsAvailable && cachedCoordinatesAvailable;
+}
+
+unsigned long gpsLocationAgeMinutes() {
+  if (lastValidFixTimestamp == 0) return 0;
+  return (millis() - lastValidFixTimestamp) / 60000UL;
 }
 
 bool getGPSCoordinates(double &latitude, double &longitude) {
   if (!hasGPSFix()) return false;
-  latitude = gps.location.lat();
-  longitude = gps.location.lng();
+  latitude = cachedLatitude;
+  longitude = cachedLongitude;
   return true;
 }
 

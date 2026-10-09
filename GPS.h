@@ -8,6 +8,7 @@ bool beginGPS();
 void updateGPS();
 bool isGPSAvailable();
 bool hasGPSFix();
+unsigned long gpsLocationAgeMinutes();
 bool getGPSCoordinates(double &latitude, double &longitude);
 String makeGPSLocationPayload();
 

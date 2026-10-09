@@ -15,7 +15,7 @@ enum DisplayLayout {
   LAYOUT_REPEATER_WITH_TEMPERATURE
 };
 
-//#define DISPLAY_LAYOUT LAYOUT_REPEATER_WITH_NAVIGATION
+// #define DISPLAY_LAYOUT LAYOUT_REPEATER_WITH_NAVIGATION
 #define DISPLAY_LAYOUT LAYOUT_REPEATER
 // #define DISPLAY_LAYOUT LAYOUT_REPEATER_WITH_TEMPERATURE
 
@@ -50,9 +50,10 @@ const int LORA_SPREADING_FACTOR = 11;
 const unsigned long STARTUP_DELAY_MS = 5000;
 const unsigned long GPS_BAUD_RATE = 9600;
 const unsigned long GPS_DETECTION_TIMEOUT_MS = 2000;
+const unsigned long GPS_COORDINATE_MAX_AGE_MS = 300000; // Clear cached fix after five minutes
 const unsigned long REPEAT_DELAY_MIN_MS = 500;
 const unsigned long REPEAT_DELAY_MAX_MS = 2000;
-const unsigned long RECEIVE_DISPLAY_TIMEOUT_MS = 8000;
+const unsigned long RECEIVE_DISPLAY_TIMEOUT_MS = 300000; // Keep received data visible for five minutes
 const unsigned long SEND_INTERVAL_MS = 30000;
 
 #endif // LORA_REPEATHER_CONFIG_H

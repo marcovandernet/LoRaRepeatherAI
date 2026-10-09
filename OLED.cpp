@@ -30,6 +30,7 @@ void renderOLEDDisplay(const String &statusText, const String &detailText,
                        const String &rxType, const String &rxLine,
                        bool temperatureAvailable, float temperatureC,
                        bool gpsAvailable, bool gpsFix,
+                       unsigned long gpsFixAgeMinutes,
                        bool hasLastGPSNode, const String &lastGPSNodeID,
                        const String &lastGPSNodePosition,
                        unsigned long receivedPacketCount,
@@ -90,11 +91,23 @@ void renderOLEDDisplay(const String &statusText, const String &detailText,
       display.setCursor(0, 44);
       display.print("Lon: " + lastGPSNodePosition.substring(coordinateComma + 1));
     } else if (DISPLAY_LAYOUT == LAYOUT_REPEATER_WITH_NAVIGATION) {
-      display.print(gpsFix ? "Eigen GPS: FIX OK" : "Eigen GPS: zoeken");
+      if (gpsFix) {
+        display.print("GPS fix age: " + String(gpsFixAgeMinutes) + " min");
+      } else if (gpsAvailable && gpsFixAgeMinutes > 0) {
+        display.print("GPS expired: " + String(gpsFixAgeMinutes) + " min");
+      } else {
+        display.print(gpsAvailable ? "GPS: waiting for fix" : "GPS: not connected");
+      }
     } else if (DISPLAY_LAYOUT == LAYOUT_REPEATER_WITH_TEMPERATURE) {
       display.print(temperatureAvailable ? "Temperatuursensor OK" : "Geen temp sensor");
     } else if (DISPLAY_LAYOUT == LAYOUT_REPEATER && gpsAvailable) {
-      display.print(gpsFix ? "GPS: FIX OK" : "GPS: Zoeken naar sat.");
+      if (gpsFix) {
+        display.print("GPS fix age: " + String(gpsFixAgeMinutes) + " min");
+      } else if (gpsAvailable && gpsFixAgeMinutes > 0) {
+        display.print("GPS expired: " + String(gpsFixAgeMinutes) + " min");
+      } else {
+        display.print("GPS: waiting for fix");
+      }
     }
   }
 

@@ -291,7 +291,8 @@ void updateOLEDDisplay(String statusText, String detailText) {
   renderOLEDDisplay(statusText, detailText, tonenOntvangenData,
                     rxAfzender, rxDisplayType, displayRxLine,
                     ds18b20Beschikbaar, huidigeTemperatuur,
-                    isGPSAvailable(), hasGPSFix(), hasLastGPSNode,
+                    isGPSAvailable(), hasGPSFix(), gpsLocationAgeMinutes(),
+                    hasLastGPSNode,
                     lastGPSNodeID, lastGPSNodePosition,
                     directReceivedPacketCount, repeatedPacketCount);
 } 
