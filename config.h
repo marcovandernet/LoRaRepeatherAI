@@ -2,10 +2,10 @@
 #define LORA_REPEATHER_CONFIG_H
 
 // Enable or disable optional hardware modules for this build.
-const bool ENABLE_GPS = false;
-const bool ENABLE_OLED = true;
-const bool ENABLE_TEMPERATURE_SENSOR = false;
-const bool ENABLE_NAVIGATION = false; // Convert received coordinates to distance/direction
+const bool ENABLE_OLED = true; // Enable OLED display for status and received data
+const bool ENABLE_TEMPERATURE_SENSOR = false; // Enable DS18B20 temperature sensor for local temperature readings
+const bool ENABLE_GPS = true; // Enable GPS module for navigation and distance/direction calculations
+const bool ENABLE_NAVIGATION = true; // Convert received coordinates to distance/direction
 
 // Select exactly one OLED layout: leave its #define uncommented and comment out
 // the other three. The current selection is repeater with navigation.
@@ -15,12 +15,12 @@ enum DisplayLayout {
   LAYOUT_REPEATER_WITH_TEMPERATURE
 };
 
-// #define DISPLAY_LAYOUT LAYOUT_REPEATER_WITH_NAVIGATION
-#define DISPLAY_LAYOUT LAYOUT_REPEATER
+#define DISPLAY_LAYOUT LAYOUT_REPEATER_WITH_NAVIGATION
+//#define DISPLAY_LAYOUT LAYOUT_REPEATER
 // #define DISPLAY_LAYOUT LAYOUT_REPEATER_WITH_TEMPERATURE
 
 // Node and mesh configuraton
-const char MY_NODE_ID[] = "0001";   // Unique four-character ID for this node 0xxx repeater 1xxx gps 2xxx temperature 3xxx navigator
+const char MY_NODE_ID[] = "3001";   // Unique four-character ID for this node 0xxx repeater 1xxx gps 2xxx temperature 3xxx navigator
 const char DEST_NODE_ID[] = "9999"; // "9999" broadcasts to all nodes
 const char BROADCAST_NODE_ID[] = "9999";
 const int NETWORK_HOPS = 3;         // Maximum number of mesh hops

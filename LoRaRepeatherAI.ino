@@ -144,6 +144,11 @@ void loop() {
           // je dadelijk je eigen herhaalde bericht weer als 'nieuw' ontvangt.
           MessIDs[messIdIndex] = MessID;
           messIdIndex = (messIdIndex + 1) % 5;
+
+          if (displayBeschikbaar) {
+            updateOLEDDisplay("REPEATER",
+                              "Repeat delay: " + String(RepeathDelay) + " ms");
+          }
         }
       }
     }
@@ -157,7 +162,10 @@ void loop() {
       repeatedPacketCount++;
     }
     pendingRepeat = false;
-    if (displayBeschikbaar) updateOLEDDisplay("STANDBY", "Mesh herhaald");
+    if (displayBeschikbaar) {
+      updateOLEDDisplay("REPEATER",
+                        "Repeated: " + String(RepeathDelay) + " ms");
+    }
   }
 
   // Display time-out check naar standby status
