@@ -21,6 +21,8 @@ int Hop = 0;
 int RSSI = 0;
 int SNR = 0;
 int ReceivedSize = 0; 
+unsigned long directReceivedPacketCount = 0;
+unsigned long repeatedPacketCount = 0;
 
 // Repeater-timer variabelen (Non-blocking)
 int RepeathDelay = 0; 
@@ -97,39 +99,46 @@ void loop() {
   if (LoRaReceive()) {
     SplitString();
     
-    if (HeaderString.length() >= 14 && !IsDuplicateMessage()) {
-      String senderID = HeaderString.substring(4, 8);
-      String targetID = HeaderString.substring(8, 12);
-      HopCheck();
-
-      if (targetID == MY_NODE_ID || targetID == BROADCAST_NODE_ID) {
-        String msgType = MessageString.substring(0, 1);
-        String payload = MessageString.substring(1);
-        
-        parsePayloadData(senderID, msgType, payload);
-        tonenOntvangenData = true;
-        displayReceivedTimeout = millis();
-        
-        if (displayBeschikbaar) {
-          updateOLEDDisplay("RECEIVER", "Bericht verwerkt");
-        }
+    if (HeaderString.length() >= 14) {
+      directReceivedPacketCount++;
+      if (displayBeschikbaar) {
+        updateOLEDDisplay("RX PACKET", "Receive count updated");
       }
 
-      // FIX: Alleen herhalen als we niet zelf de afzender zijn (voorkomt mesh-loops)
-      if (Hop > 1 && senderID != MY_NODE_ID) {
-        Hop--;
-        String newHopStr = String(Hop);
-        String retransmitHeader = HeaderString.substring(0, 12) + newHopStr + HeaderString.substring(13);
-        
-        messageToRepeat = retransmitHeader + MessageString;
-        pendingRepeat = true;
-        RepeathDelay = random(REPEAT_DELAY_MIN_MS, REPEAT_DELAY_MAX_MS);
-        repeatTimestamp = millis();
-        
-        // FIX: Voeg het ID NU al toe aan de geschiedenis om te voorkomen dat 
-        // je dadelijk je eigen herhaalde bericht weer als 'nieuw' ontvangt.
-        MessIDs[messIdIndex] = MessID;
-        messIdIndex = (messIdIndex + 1) % 5;
+      if (!IsDuplicateMessage()) {
+        String senderID = HeaderString.substring(4, 8);
+        String targetID = HeaderString.substring(8, 12);
+        HopCheck();
+
+        if (targetID == MY_NODE_ID || targetID == BROADCAST_NODE_ID) {
+          String msgType = MessageString.substring(0, 1);
+          String payload = MessageString.substring(1);
+
+          parsePayloadData(senderID, msgType, payload);
+          tonenOntvangenData = true;
+          displayReceivedTimeout = millis();
+
+          if (displayBeschikbaar) {
+            updateOLEDDisplay("RECEIVER", "Bericht verwerkt");
+          }
+        }
+
+        // FIX: Alleen herhalen als we niet zelf de afzender zijn (voorkomt mesh-loops)
+        if (Hop > 1 && senderID != MY_NODE_ID) {
+          Hop--;
+          String newHopStr = String(Hop);
+          String retransmitHeader = HeaderString.substring(0, 12) + newHopStr + HeaderString.substring(13);
+
+          messageToRepeat = retransmitHeader + MessageString;
+          pendingRepeat = true;
+          RepeathDelay = random(REPEAT_DELAY_MIN_MS, REPEAT_DELAY_MAX_MS);
+          repeatTimestamp = millis();
+
+          // FIX: Voeg het ID NU al toe aan de geschiedenis om te voorkomen dat
+          // je dadelijk je eigen herhaalde bericht weer als 'nieuw' ontvangt.
+          MessIDs[messIdIndex] = MessID;
+          messIdIndex = (messIdIndex + 1) % 5;
+        }
       }
     }
   }
@@ -138,7 +147,9 @@ void loop() {
   if (pendingRepeat && (millis() - repeatTimestamp >= (unsigned long)RepeathDelay)) {
     LoRa.beginPacket();
     LoRa.print(messageToRepeat);
-    LoRa.endPacket();
+    if (LoRa.endPacket()) {
+      repeatedPacketCount++;
+    }
     pendingRepeat = false;
     if (displayBeschikbaar) updateOLEDDisplay("STANDBY", "Mesh herhaald");
   }
@@ -197,6 +208,11 @@ void SplitString(){
     MessageString = Received.substring(14); 
     MessID = HeaderString.substring(0, 4);
     hop = HeaderString.substring(12, 13);
+  } else {
+    HeaderString = "";
+    MessageString = "";
+    MessID = "";
+    hop = "";
   }
 }
 
@@ -280,5 +296,6 @@ void updateOLEDDisplay(String statusText, String detailText) {
                     rxAfzender, rxDisplayType, displayRxLine, RSSI, SNR,
                     ds18b20Beschikbaar, huidigeTemperatuur,
                     isGPSAvailable(), hasGPSFix(), hasLastGPSNode,
-                    lastGPSNodeID, lastGPSNodePosition);
+                    lastGPSNodeID, lastGPSNodePosition,
+                    directReceivedPacketCount, repeatedPacketCount);
 } 

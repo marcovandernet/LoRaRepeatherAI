@@ -30,7 +30,9 @@ void renderOLEDDisplay(const String &statusText, const String &detailText,
                        int rssi, int snr, bool temperatureAvailable,
                        float temperatureC, bool gpsAvailable, bool gpsFix,
                        bool hasLastGPSNode, const String &lastGPSNodeID,
-                       const String &lastGPSNodePosition) {
+                       const String &lastGPSNodePosition,
+                       unsigned long receivedPacketCount,
+                       unsigned long repeatedPacketCount) {
   if (!ENABLE_OLED || !displayAvailable) return;
 
   display.clearDisplay();
@@ -45,18 +47,14 @@ void renderOLEDDisplay(const String &statusText, const String &detailText,
   display.setCursor(0, 8);
   display.print(detailText);
   display.drawFastHLine(0, OLED_YELLOW_HEIGHT, SCREEN_WIDTH, WHITE);
+  String packetCounts = "RX:" + String(receivedPacketCount) +
+                        " REP:" + String(repeatedPacketCount);
 
   if (showingReceivedData) {
     display.setCursor(0, OLED_BLUE_CONTENT_TOP);
     display.print("RX Van: " + rxSender + " (" + rxType + ")");
     display.setCursor(0, 36);
     display.print(rxLine);
-    display.setCursor(0, 52);
-    if (DISPLAY_LAYOUT == LAYOUT_REPEATER_WITH_TEMPERATURE && temperatureAvailable) {
-      display.print("Temp: " + String(temperatureC, 1) + " C");
-    } else {
-      display.print("RSSI: " + String(rssi) + " SNR: " + String(snr));
-    }
   } else {
     display.setCursor(0, OLED_BLUE_CONTENT_TOP);
     if (DISPLAY_LAYOUT == LAYOUT_REPEATER_WITH_NAVIGATION && hasLastGPSNode) {
@@ -80,6 +78,9 @@ void renderOLEDDisplay(const String &statusText, const String &detailText,
       display.print(gpsFix ? "GPS: FIX OK" : "GPS: Zoeken naar sat.");
     }
   }
+
+  display.setCursor(0, 52);
+  display.print(packetCounts);
 
   display.display();
 }
