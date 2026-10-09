@@ -19,6 +19,7 @@ String hop = "";
 String MessID = "";  
 int Hop = 0; 
 int ReceivedSize = 0; 
+int ReceivedRSSI = 0;
 unsigned long directReceivedPacketCount = 0;
 unsigned long repeatedPacketCount = 0;
 
@@ -129,7 +130,14 @@ void loop() {
 
           messageToRepeat = retransmitHeader + MessageString;
           pendingRepeat = true;
-          RepeathDelay = random(REPEAT_DELAY_MIN_MS, REPEAT_DELAY_MAX_MS);
+          int boundedRSSI = constrain(ReceivedRSSI,
+                                      REPEAT_RSSI_WEAK_DBM,
+                                      REPEAT_RSSI_STRONG_DBM);
+          RepeathDelay = map(boundedRSSI,
+                             REPEAT_RSSI_WEAK_DBM,
+                             REPEAT_RSSI_STRONG_DBM,
+                             REPEAT_DELAY_MIN_MS,
+                             REPEAT_DELAY_MAX_MS);
           repeatTimestamp = millis();
 
           // FIX: Voeg het ID NU al toe aan de geschiedenis om te voorkomen dat
@@ -195,6 +203,7 @@ bool LoRaReceive(){
   while (LoRa.available()) {
     Received += (char)LoRa.read();
   }
+  ReceivedRSSI = LoRa.packetRssi();
   return true; 
 }
 

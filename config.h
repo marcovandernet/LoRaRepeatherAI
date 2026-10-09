@@ -53,7 +53,9 @@ const unsigned long GPS_DETECTION_TIMEOUT_MS = 2000;
 const unsigned long GPS_COORDINATE_MAX_AGE_MS = 300000; // Clear cached fix after five minutes
 const unsigned long REPEAT_DELAY_MIN_MS = 500;
 const unsigned long REPEAT_DELAY_MAX_MS = 2000;
+const int REPEAT_RSSI_WEAK_DBM = -120;   // Weak signals receive the shortest delay
+const int REPEAT_RSSI_STRONG_DBM = -60;  // Strong signals receive the longest delay
 const unsigned long RECEIVE_DISPLAY_TIMEOUT_MS = 300000; // Keep received data visible for five minutes
-const unsigned long SEND_INTERVAL_MS = 30000;
+const unsigned long SEND_INTERVAL_MS = 60000; // Send interval in milliseconds
 
 #endif // LORA_REPEATHER_CONFIG_H
