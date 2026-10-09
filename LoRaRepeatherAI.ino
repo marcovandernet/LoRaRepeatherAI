@@ -8,11 +8,8 @@
 #include <DallasTemperature.h>  
 // SoftwareSerial is volledig verwijderd om de Hardware Serial (TX/RX) te gebruiken
 #include <TinyGPS++.h>          
+#include "config.h"
 
-#define SCREEN_WIDTH 128 
-#define SCREEN_HEIGHT 64 
-#define OLED_RESET     -1 
-#define SCREEN_ADDRESS 0x3C
 
 // Voeg deze variabelen toe aan het begin van je code (boven de setup) 
 // om de berekende waarden te onthouden voor het scherm:
@@ -22,16 +19,7 @@ String richtingNaarAnder = "---";
 // Constructor van de Wemos Mini OLED bibliotheek
 Adafruit_SSD1306 display(OLED_RESET);
 
-// =========================================================================
-// --- CONFIGURATIE VAN DEZE NODE (Pas dit aan per ESP8266) ---------------
-// =========================================================================
-const String MY_NODE_ID   = "0001"; // De unieke ID van deze node (altijd 4 tekens)
-const String DEST_NODE_ID = "9999"; // Doelstation ("9999" voor broadcast naar iedereen)
-const int NETWERK_HOPS    = 3;      // Maximaal aantal stappen
-// =========================================================================
-
 // DS18B20 Pin configuratie
-#define ONE_WIRE_BUS 4 // Pin D2 (GPIO 4) op de ESP8266
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
@@ -42,18 +30,6 @@ TinyGPSPlus gps;
 bool ds18b20Beschikbaar = false;
 bool gpsBeschikbaar     = false;
 bool displayBeschikbaar = false; 
-
-// LoRa SX1278 pins
-#define SS 15
-#define RST -1 
-#define DIO0 16
-
-// LoRa settings
-#define codingrate 5        // FIX: Aangepast van 5/8 naar 5 om te voorkomen dat de waarde 0 wordt!
-#define transmitpower 2 
-long frequency = 433E6; 
-int bandwidth = 125E3;
-int spreadingFactor = 11;   
 
 // Variabelen voor berichtverwerking
 String Received = "";  
@@ -67,7 +43,6 @@ int SNR = 0;
 int ReceivedSize = 0; 
 
 // Repeater-timer variabelen (Non-blocking)
-int repeathwaitbase = 15000; 
 int RepeathDelay = 0; 
 unsigned long repeatTimestamp = 0;
 bool pendingRepeat = false;
@@ -79,7 +54,6 @@ int messIdIndex = 0;
 
 // Automatische zend-timer
 unsigned long lastSendTime = 0;
-const unsigned long sendInterval = 30000; 
 int eigenBerichtTeller = 1000; 
 float huidigeTemperatuur = 0.0;
 
@@ -103,7 +77,7 @@ void configureerGPS();
 void setup() {
   // Gestart op 9600 baud om direct synchroon te lopen met de GPS hardware data stream
   Serial.begin(9600);
-  delay(5000);
+  delay(STARTUP_DELAY_MS);
 
   // 1. ONTDEK OLED SCHERM (I2C Scanner check)
   Wire.begin(); 
@@ -123,7 +97,7 @@ void setup() {
 
   // 3. Ontdek en configureer GPS module via Hardware Serial poort activiteit
   unsigned long startCheck = millis();
-  while (millis() - startCheck < 2000) {
+  while (millis() - startCheck < GPS_DETECTION_TIMEOUT_MS) {
     if (Serial.available() > 0) {
       gpsBeschikbaar = true;
       configureerGPS(); 
@@ -135,14 +109,14 @@ void setup() {
 
   // 4. Initialiseer LoRa
   SPI.begin();
-  LoRa.setPins(SS, RST, DIO0);
-  if (!LoRa.begin(frequency)) {
+  LoRa.setPins(LORA_SS, LORA_RST, LORA_DIO0);
+  if (!LoRa.begin(LORA_FREQUENCY)) {
     while (1) { delay(10); yield(); }
   }
-  LoRa.setSignalBandwidth(bandwidth);
-  LoRa.setSpreadingFactor(spreadingFactor);
-  LoRa.setCodingRate4(codingrate);
-  LoRa.setTxPower(transmitpower);
+  LoRa.setSignalBandwidth(LORA_BANDWIDTH);
+  LoRa.setSpreadingFactor(LORA_SPREADING_FACTOR);
+  LoRa.setCodingRate4(LORA_CODING_RATE);
+  LoRa.setTxPower(LORA_TRANSMIT_POWER);
 
   if (displayBeschikbaar) {
     updateOLEDDisplay("STANDBY", "Systeem actief");
@@ -166,7 +140,7 @@ void loop() {
       String targetID = HeaderString.substring(8, 12);
       HopCheck();
 
-      if (targetID == MY_NODE_ID || targetID == "9999") {
+      if (targetID == MY_NODE_ID || targetID == BROADCAST_NODE_ID) {
         String msgType = MessageString.substring(0, 1);
         String payload = MessageString.substring(1);
         
@@ -187,7 +161,7 @@ void loop() {
         
         messageToRepeat = retransmitHeader + MessageString;
         pendingRepeat = true;
-        RepeathDelay = random(500, 2000); 
+        RepeathDelay = random(REPEAT_DELAY_MIN_MS, REPEAT_DELAY_MAX_MS);
         repeatTimestamp = millis();
         
         // FIX: Voeg het ID NU al toe aan de geschiedenis om te voorkomen dat 
@@ -209,7 +183,7 @@ void loop() {
 
   // Display time-out check naar standby status
   if (tonenOntvangenData && displayReceivedTimeout != 0) {
-    if (millis() - displayReceivedTimeout > 8000) { 
+    if (millis() - displayReceivedTimeout > RECEIVE_DISPLAY_TIMEOUT_MS) {
       displayReceivedTimeout = 0;
       tonenOntvangenData = false;
       if (displayBeschikbaar) updateOLEDDisplay("STANDBY", "Systeem stand-by");
@@ -217,7 +191,7 @@ void loop() {
   }
 
   // 3. Automatisch periodiek eigen data verzenden naar het Mesh-netwerk
-  if (millis() - lastSendTime > sendInterval) {
+  if (millis() - lastSendTime > SEND_INTERVAL_MS) {
     lastSendTime = millis();
     
     String payload = "";
@@ -241,11 +215,11 @@ void loop() {
       typeFlag = "4"; 
 
     } else {
-      payload = "Node " + MY_NODE_ID + " OK";
+      payload = String("Node ") + MY_NODE_ID + " OK";
       typeFlag = "1";
     }
 
-    SendOwnMessage(DEST_NODE_ID, NETWERK_HOPS, typeFlag, payload);
+    SendOwnMessage(String(DEST_NODE_ID), NETWORK_HOPS, typeFlag, payload);
   }
 
   yield(); 
@@ -355,7 +329,7 @@ void updateOLEDDisplay(String statusText, String detailText) {
   
   display.setTextSize(1);
   display.setCursor(0, 0);
-  display.print("NODE:" + MY_NODE_ID);
+  display.print(String("NODE:") + MY_NODE_ID);
   display.setCursor(64, 0);
   display.print("[" + statusText + "]");
   display.drawFastHLine(0, 10, 128, WHITE); 
