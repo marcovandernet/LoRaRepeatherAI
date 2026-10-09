@@ -1,34 +1,13 @@
 // LoRa Mesh Node: Transceiver met Autodetect voor GPS, DS18B20 én OLED
 #include <SPI.h>
 #include <LoRa.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h> // Maakt gebruik van de Wemos Mini OLED variant
-#include <Wire.h>               // Nodig voor I2C scanner
-#include <OneWire.h>            
-#include <DallasTemperature.h>  
-// SoftwareSerial is volledig verwijderd om de Hardware Serial (TX/RX) te gebruiken
-#include <TinyGPS++.h>          
 #include "config.h"
-
-
-// Voeg deze variabelen toe aan het begin van je code (boven de setup) 
-// om de berekende waarden te onthouden voor het scherm:
-double afstandTotAnder = 0.0;
-String richtingNaarAnder = "---";
-
-// Constructor van de Wemos Mini OLED bibliotheek
-Adafruit_SSD1306 display(OLED_RESET);
-
-// DS18B20 Pin configuratie
-OneWire oneWire(ONE_WIRE_BUS);
-DallasTemperature sensors(&oneWire);
-
-// GPS configuratie via de Hardware Serial poort (Fysieke TX/RX pinnen)
-TinyGPSPlus gps;
+#include "GPS.h"
+#include "OLED.h"
+#include "TemperatureSensor.h"
 
 // Hardware beschikbaarheidsvlaggen (DYNAMISCH)
 bool ds18b20Beschikbaar = false;
-bool gpsBeschikbaar     = false;
 bool displayBeschikbaar = false; 
 
 // Variabelen voor berichtverwerking
@@ -72,39 +51,23 @@ void SplitString();
 void HopCheck();
 bool IsDuplicateMessage();
 void parsePayloadData(String senderID, String type, String payload);
-void configureerGPS();
 
 void setup() {
-  // Gestart op 9600 baud om direct synchroon te lopen met de GPS hardware data stream
-  Serial.begin(9600);
+  // Hardware Serial is used by the GPS module.
+  if (ENABLE_GPS) {
+    Serial.begin(GPS_BAUD_RATE);
+  }
   delay(STARTUP_DELAY_MS);
 
-  // 1. ONTDEK OLED SCHERM (I2C Scanner check)
-  Wire.begin(); 
-  Wire.beginTransmission(SCREEN_ADDRESS);
-  byte error = Wire.endTransmission();
-  
-  if (error == 0) {
-    display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS);
-    displayBeschikbaar = true;
-  }
+  // 1. Detect and initialize the OLED.
+  displayBeschikbaar = ENABLE_OLED && beginOLED();
 
-  // 2. Ontdek DS18B20
-  sensors.begin();
-  if (sensors.getDeviceCount() > 0) {
-    ds18b20Beschikbaar = true;
-  }
+  // 2. Detect the DS18B20 temperature sensor.
+  ds18b20Beschikbaar = ENABLE_TEMPERATURE_SENSOR && beginTemperatureSensor();
 
-  // 3. Ontdek en configureer GPS module via Hardware Serial poort activiteit
-  unsigned long startCheck = millis();
-  while (millis() - startCheck < GPS_DETECTION_TIMEOUT_MS) {
-    if (Serial.available() > 0) {
-      gpsBeschikbaar = true;
-      configureerGPS(); 
-      break;
-    }
-    delay(10);
-    yield();
+  // 3. Detect and configure the GPS module on Hardware Serial.
+  if (ENABLE_GPS) {
+    beginGPS();
   }
 
   // 4. Initialiseer LoRa
@@ -124,12 +87,7 @@ void setup() {
 }
 
 void loop() {
-  // GPS data stream continu inlezen via Hardware Serial
-  if (gpsBeschikbaar) {
-    while (Serial.available() > 0) {
-      gps.encode(Serial.read());
-    }
-  }
+  updateGPS();
 
   // 1. Luister naar binnenkomende LoRa pakketten
   if (LoRaReceive()) {
@@ -198,20 +156,11 @@ void loop() {
     String typeFlag = "1"; 
 
     if (ds18b20Beschikbaar) {
-      sensors.requestTemperatures();
-      huidigeTemperatuur = sensors.getTempCByIndex(0);
+      huidigeTemperatuur = readTemperatureC();
       payload = String(huidigeTemperatuur, 1);
       typeFlag = "2"; 
-    } else if (gpsBeschikbaar && gps.location.isValid()) {
-      char latBuf[16];
-      char lngBuf[16];
-      
-      dtostrf(gps.location.lat(), 2, 6, latBuf);
-      dtostrf(gps.location.lng(), 2, 6, lngBuf);
-      
-      payload = String(latBuf) + "," + String(lngBuf);
-      payload.trim(); 
-      
+    } else if (hasGPSFix()) {
+      payload = makeGPSLocationPayload();
       typeFlag = "4"; 
 
     } else {
@@ -297,26 +246,7 @@ void parsePayloadData(String senderID, String type, String payload) {
     rxLine1 = "Temp: " + payload + " C";
   } else if (type == "4") {
     rxDisplayType = "GPS";
-    
-    int kommaIndex = payload.indexOf(',');
-    if (kommaIndex > 0) {
-      double andereLat = payload.substring(0, kommaIndex).toDouble();
-      double andereLng = payload.substring(kommaIndex + 1).toDouble();
-      
-      if (gps.location.isValid()) {
-        afstandTotAnder = gps.distanceBetween(gps.location.lat(), gps.location.lng(), andereLat, andereLng);
-        double graden = gps.courseTo(gps.location.lat(), gps.location.lng(), andereLat, andereLng);
-        richtingNaarAnder = gps.cardinal(graden);
-        
-        if (afstandTotAnder < 1000) {
-          rxLine1 = String(afstandTotAnder, 0) + "m " + richtingNaarAnder;
-        } else {
-          rxLine1 = String((afstandTotAnder / 1000.0), 1) + "km " + richtingNaarAnder;
-        }
-      } else {
-        rxLine1 = "Wacht op eigen GPS...";
-      }
-    }
+    rxLine1 = describeRemoteGPSLocation(payload);
   } else {
     rxDisplayType = "DATA";
     rxLine1 = payload;
@@ -324,73 +254,8 @@ void parsePayloadData(String senderID, String type, String payload) {
 }
 
 void updateOLEDDisplay(String statusText, String detailText) {
-  display.clearDisplay();
-  display.setTextColor(WHITE); 
-  
-  display.setTextSize(1);
-  display.setCursor(0, 0);
-  display.print(String("NODE:") + MY_NODE_ID);
-  display.setCursor(64, 0);
-  display.print("[" + statusText + "]");
-  display.drawFastHLine(0, 10, 128, WHITE); 
-  
-  if (tonenOntvangenData) {
-    display.setCursor(0, 16);
-    display.print("RX Van: " + rxAfzender + " (" + rxDisplayType + ")");
-    display.setCursor(0, 32);
-    display.setTextSize(1);
-    display.print(rxLine1);
-    
-    display.setTextSize(1);
-    display.setCursor(0, 52);
-    display.print("RSSI: " + String(RSSI) + " SNR: " + String(SNR));
-  } else {
-    display.setCursor(0, 16);
-    display.print(detailText);
-    
-    display.setCursor(0, 32);
-    if (ds18b20Beschikbaar) {
-      display.print("Lokaal Temp: " + String(huidigeTemperatuur, 1) + "C");
-    } else {
-      display.print("Geen temp sensor");
-    }
-    
-    display.setCursor(0, 48);
-    if (gpsBeschikbaar && gps.location.isValid()) {
-      display.print("GPS: FIX OK");
-    } else if (gpsBeschikbaar) {
-      display.print("GPS: Zoeken naar sat.");
-    } else {
-      display.print("GPS: Niet verbonden");
-    }
-  }
-  
-  display.display();
+  renderOLEDDisplay(statusText, detailText, tonenOntvangenData,
+                    rxAfzender, rxDisplayType, rxLine1, RSSI, SNR,
+                    ds18b20Beschikbaar, huidigeTemperatuur,
+                    isGPSAvailable(), hasGPSFix());
 } 
-
-void configureerGPS() {
-  delay(500);
-  Serial.println(F("$PUBX,40,GLL,0,0,0,0,0,0*5C")); 
-  delay(50);
-  Serial.println(F("$PUBX,40,GSA,0,0,0,0,0,0*4E")); 
-  delay(50);
-  Serial.println(F("$PUBX,40,GSV,0,0,0,0,0,0*59")); 
-  delay(50);
-  Serial.println(F("$PUBX,40,VTG,0,0,0,0,0,0*5E")); 
-  delay(50);
-
-  Serial.println(F("$PUBX,40,GGA,1,1,1,1,1,1*5A")); 
-  delay(50);
-  Serial.println(F("$PUBX,40,RMC,1,1,1,1,1,1*47")); 
-  delay(50);
-
-  uint8_t setNav[] = {
-    0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, 0x03, 0x03, 0x00, 0x00, 
-    0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x05, 0x00, 0xFA, 0x00, 0xFA, 0x00, 
-    0x64, 0x00, 0x2C, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x16, 0xDC
-  };
-  Serial.write(setNav, sizeof(setNav));
-  delay(100);
-  Serial.flush(); 
-}

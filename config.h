@@ -1,6 +1,11 @@
 #ifndef LORA_REPEATHER_CONFIG_H
 #define LORA_REPEATHER_CONFIG_H
 
+// Enable or disable optional hardware modules for this build.
+const bool ENABLE_GPS = true;
+const bool ENABLE_OLED = true;
+const bool ENABLE_TEMPERATURE_SENSOR = true;
+
 // Node and mesh configuration
 const char MY_NODE_ID[] = "0001";   // Unique four-character ID for this node
 const char DEST_NODE_ID[] = "9999"; // "9999" broadcasts to all nodes
@@ -28,6 +33,7 @@ const int LORA_SPREADING_FACTOR = 11;
 
 // Timing configuration (milliseconds)
 const unsigned long STARTUP_DELAY_MS = 5000;
+const unsigned long GPS_BAUD_RATE = 9600;
 const unsigned long GPS_DETECTION_TIMEOUT_MS = 2000;
 const unsigned long REPEAT_DELAY_MIN_MS = 500;
 const unsigned long REPEAT_DELAY_MAX_MS = 2000;

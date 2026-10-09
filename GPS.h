@@ -1,0 +1,14 @@
+#ifndef LORA_REPEATHER_GPS_H
+#define LORA_REPEATHER_GPS_H
+
+#include <Arduino.h>
+
+// Start GPS detection/configuration, and call updateGPS() regularly afterward.
+bool beginGPS();
+void updateGPS();
+bool isGPSAvailable();
+bool hasGPSFix();
+String makeGPSLocationPayload();
+String describeRemoteGPSLocation(const String &payload);
+
+#endif // LORA_REPEATHER_GPS_H
