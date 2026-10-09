@@ -20,15 +20,16 @@ bool beginOLED() {
   Wire.beginTransmission(SCREEN_ADDRESS);
   if (Wire.endTransmission() != 0) return false;
 
-  displayAvailable = display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS);
+  display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS);
+  displayAvailable = true;
   return displayAvailable;
 }
 
 void renderOLEDDisplay(const String &statusText, const String &detailText,
                        bool showingReceivedData, const String &rxSender,
                        const String &rxType, const String &rxLine,
-                       int rssi, int snr, bool temperatureAvailable,
-                       float temperatureC, bool gpsAvailable, bool gpsFix,
+                       bool temperatureAvailable, float temperatureC,
+                       bool gpsAvailable, bool gpsFix,
                        bool hasLastGPSNode, const String &lastGPSNodeID,
                        const String &lastGPSNodePosition,
                        unsigned long receivedPacketCount,

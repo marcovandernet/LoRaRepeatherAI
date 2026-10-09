@@ -18,8 +18,6 @@ String MessageString = "";
 String hop = ""; 
 String MessID = "";  
 int Hop = 0; 
-int RSSI = 0;
-int SNR = 0;
 int ReceivedSize = 0; 
 unsigned long directReceivedPacketCount = 0;
 unsigned long repeatedPacketCount = 0;
@@ -197,8 +195,6 @@ bool LoRaReceive(){
   while (LoRa.available()) {
     Received += (char)LoRa.read();
   }
-  RSSI = LoRa.packetRssi();
-  SNR = LoRa.packetSnr();
   return true; 
 }
 
@@ -293,7 +289,7 @@ void updateOLEDDisplay(String statusText, String detailText) {
       : rxLine1;
 
   renderOLEDDisplay(statusText, detailText, tonenOntvangenData,
-                    rxAfzender, rxDisplayType, displayRxLine, RSSI, SNR,
+                    rxAfzender, rxDisplayType, displayRxLine,
                     ds18b20Beschikbaar, huidigeTemperatuur,
                     isGPSAvailable(), hasGPSFix(), hasLastGPSNode,
                     lastGPSNodeID, lastGPSNodePosition,
