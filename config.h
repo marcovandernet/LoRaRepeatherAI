@@ -40,19 +40,19 @@ const int LORA_RST = -1;        // Reset pin is not connected
 const uint8_t LORA_DIO0 = 16;   // D0 / GPIO 16
 
 // LoRa radio configuration
-const int LORA_CODING_RATE = 5;
-const int LORA_TRANSMIT_POWER = 2;
-const long LORA_FREQUENCY = 433E6;
-const long LORA_BANDWIDTH = 125E3;
-const int LORA_SPREADING_FACTOR = 11;
+const int LORA_CODING_RATE = 5; // 5 = 4/5 coding rate, 6 = 4/6, 7 = 4/7, 8 = 4/8 higer = more robust, lower = faster data rate
+const int LORA_TRANSMIT_POWER = 16; // 2 = 2 dBm,  18 = 18 dBm (upper limmit of the sx1278 module)
+const long LORA_FREQUENCY = 433E6; // 433 MHz
+const long LORA_BANDWIDTH = 125E3; // 125 kHz bandwidth range of the sx1278 module is 7.8 kHz to 500 kHz higher = faster data rate, lower = more range
+const int LORA_SPREADING_FACTOR = 11; // 7 to 12, higher = longer range, lower = faster data rate
 
 // Timing configuration (milliseconds)
 const unsigned long STARTUP_DELAY_MS = 5000;
 const unsigned long GPS_BAUD_RATE = 9600;
-const unsigned long GPS_DETECTION_TIMEOUT_MS = 2000;
+const unsigned long GPS_DETECTION_TIMEOUT_MS = 2000; // Timeout for GPS detection
 const unsigned long GPS_COORDINATE_MAX_AGE_MS = 300000; // Clear cached fix after five minutes
-const unsigned long REPEAT_DELAY_MIN_MS = 500;
-const unsigned long REPEAT_DELAY_MAX_MS = 2000;
+const unsigned long REPEAT_DELAY_MIN_MS = 500; //the shortest delay for weak signals
+const unsigned long REPEAT_DELAY_MAX_MS = 2000; //the longest delay for strong signals
 const int REPEAT_RSSI_WEAK_DBM = -120;   // Weak signals receive the shortest delay
 const int REPEAT_RSSI_STRONG_DBM = -60;  // Strong signals receive the longest delay
 const unsigned long RECEIVE_DISPLAY_TIMEOUT_MS = 300000; // Keep received data visible for five minutes
