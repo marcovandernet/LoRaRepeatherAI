@@ -14,7 +14,7 @@ String formatRelativePosition(const String &coordinatePayload,
 
   int commaIndex = coordinatePayload.indexOf(',');
   if (commaIndex <= 0) return coordinatePayload;
-  if (!localCoordinatesValid) return "Wacht op eigen GPS...";
+  if (!localCoordinatesValid) return coordinatePayload;
 
   double remoteLatitude = coordinatePayload.substring(0, commaIndex).toDouble();
   double remoteLongitude = coordinatePayload.substring(commaIndex + 1).toDouble();

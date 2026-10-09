@@ -54,11 +54,24 @@ void renderOLEDDisplay(const String &statusText, const String &detailText,
   if (showingReceivedData) {
     display.setCursor(0, OLED_BLUE_CONTENT_TOP);
     display.print("RX Van: " + rxSender + " (" + rxType + ")");
-    display.setCursor(0, 36);
-    display.print(rxLine);
+    int coordinateComma = rxType == "GPS" ? rxLine.indexOf(',') : -1;
+    if (coordinateComma > 0) {
+      display.setCursor(0, 36);
+      display.print("Lat: " + rxLine.substring(0, coordinateComma));
+      display.setCursor(0, 44);
+      display.print("Lon: " + rxLine.substring(coordinateComma + 1));
+    } else {
+      display.setCursor(0, 36);
+      display.print(rxLine);
+    }
   } else {
     display.setCursor(0, OLED_BLUE_CONTENT_TOP);
-    if (DISPLAY_LAYOUT == LAYOUT_REPEATER_WITH_NAVIGATION && hasLastGPSNode) {
+    bool showingRawGPSCoordinates =
+        DISPLAY_LAYOUT == LAYOUT_REPEATER_WITH_NAVIGATION && hasLastGPSNode &&
+        lastGPSNodePosition.indexOf(',') > 0;
+    if (showingRawGPSCoordinates) {
+      display.print("GPS node: " + lastGPSNodeID);
+    } else if (DISPLAY_LAYOUT == LAYOUT_REPEATER_WITH_NAVIGATION && hasLastGPSNode) {
       display.print("GPS " + lastGPSNodeID + ": " + lastGPSNodePosition);
     } else if (DISPLAY_LAYOUT == LAYOUT_REPEATER_WITH_TEMPERATURE && temperatureAvailable) {
       display.print("Lokaal Temp: " + String(temperatureC, 1) + "C");
@@ -71,7 +84,12 @@ void renderOLEDDisplay(const String &statusText, const String &detailText,
     }
 
     display.setCursor(0, 36);
-    if (DISPLAY_LAYOUT == LAYOUT_REPEATER_WITH_NAVIGATION) {
+    if (showingRawGPSCoordinates) {
+      int coordinateComma = lastGPSNodePosition.indexOf(',');
+      display.print("Lat: " + lastGPSNodePosition.substring(0, coordinateComma));
+      display.setCursor(0, 44);
+      display.print("Lon: " + lastGPSNodePosition.substring(coordinateComma + 1));
+    } else if (DISPLAY_LAYOUT == LAYOUT_REPEATER_WITH_NAVIGATION) {
       display.print(gpsFix ? "Eigen GPS: FIX OK" : "Eigen GPS: zoeken");
     } else if (DISPLAY_LAYOUT == LAYOUT_REPEATER_WITH_TEMPERATURE) {
       display.print(temperatureAvailable ? "Temperatuursensor OK" : "Geen temp sensor");
