@@ -22,7 +22,7 @@ const bool ENABLE_GPS = false; // Enable GPS module for navigation and distance/
 const bool ENABLE_NAVIGATION = false; // Convert received coordinates to distance/direction
 
 // Node and mesh configuraton
-const char MY_NODE_ID[] = "0002";   // Unique four-character ID for this node 0xxx repeater 1xxx gps 2xxx temperature 3xxx navigator
+const char MY_NODE_ID[] = "4001";   // Unique four-character ID for this node 0xxx repeater 1xxx gps 2xxx temperature 3xxx navigator 4xxx HomeAssistant gateway
 const char DEST_NODE_ID[] = "9999"; // "9999" broadcasts to all nodes
 const char BROADCAST_NODE_ID[] = "9999";
 const int NETWORK_HOPS = 3;         // Maximum number of mesh hops
@@ -59,6 +59,18 @@ const int REPEAT_RSSI_WEAK_DBM = -120;   // Weak signals receive the shortest de
 const int REPEAT_RSSI_STRONG_DBM = -60;  // Strong signals receive the longest delay
 const unsigned long RECEIVE_DISPLAY_TIMEOUT_MS = 300000; // Keep received data visible for five minutes
 const unsigned long SEND_INTERVAL_MS = 60000; // Send interval in milliseconds
-const unsigned long SENSORLESS_SEND_INTERVAL_MS = 300000; // Send every five minutes when no GPS or temperature sensor is available
+const unsigned long SENSORLESS_SEND_INTERVAL_MS = 60000; // Send every five minutes when no GPS or temperature sensor is available
+
+// Wi-Fi and MQTT settings for the Home Assistant gateway copy.
+const char WIFI_SSID[] = "";
+const char WIFI_PASSWORD[] = "";
+const char MQTT_HOST[] = ""; // Home Assistant MQTT broker address
+const uint16_t MQTT_PORT = 1883;
+const char MQTT_USERNAME[] = ""; // Leave empty if the broker does not require authentication
+const char MQTT_PASSWORD[] = "";
+const char MQTT_CLIENT_ID[] = "lora_repeater_gateway";
+const char MQTT_TOPIC_PREFIX[] = "lorarepeater";
+const char HA_MQTT_DISCOVERY_PREFIX[] = "homeassistant";
+const unsigned long MQTT_RECONNECT_INTERVAL_MS = 5000;
 
 #endif // LORA_REPEATHER_CONFIG_H
