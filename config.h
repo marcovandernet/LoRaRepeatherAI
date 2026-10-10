@@ -1,26 +1,28 @@
 #ifndef LORA_REPEATHER_CONFIG_H
 #define LORA_REPEATHER_CONFIG_H
 
-// Enable or disable optional hardware modules for this build.
-const bool ENABLE_OLED = true; // Enable OLED display for status and received data
-const bool ENABLE_TEMPERATURE_SENSOR = false; // Enable DS18B20 temperature sensor for local temperature readings
-const bool ENABLE_GPS = true; // Enable GPS module for navigation and distance/direction calculations
-const bool ENABLE_NAVIGATION = true; // Convert received coordinates to distance/direction
-
-// Select exactly one OLED layout: leave its #define uncommented and comment out
-// the other three. The current selection is repeater with navigation.
+// Select one repeater variant. The no-display variant skips OLED initialization
+// and keeps the repeater's LoRa behavior unchanged.
 enum DisplayLayout {
+  LAYOUT_REPEATER_NO_DISPLAY,
   LAYOUT_REPEATER,
   LAYOUT_REPEATER_WITH_NAVIGATION,
   LAYOUT_REPEATER_WITH_TEMPERATURE
 };
 
-#define DISPLAY_LAYOUT LAYOUT_REPEATER_WITH_NAVIGATION
-//#define DISPLAY_LAYOUT LAYOUT_REPEATER
+//#define DISPLAY_LAYOUT LAYOUT_REPEATER_NO_DISPLAY
+#define DISPLAY_LAYOUT LAYOUT_REPEATER
+// #define DISPLAY_LAYOUT LAYOUT_REPEATER_WITH_NAVIGATION
 // #define DISPLAY_LAYOUT LAYOUT_REPEATER_WITH_TEMPERATURE
 
+// Hardware availability for this build.
+const bool ENABLE_OLED = DISPLAY_LAYOUT != LAYOUT_REPEATER_NO_DISPLAY;
+const bool ENABLE_TEMPERATURE_SENSOR = false; // Enable DS18B20 temperature sensor for local temperature readings
+const bool ENABLE_GPS = false; // Enable GPS module for navigation and distance/direction calculations
+const bool ENABLE_NAVIGATION = false; // Convert received coordinates to distance/direction
+
 // Node and mesh configuraton
-const char MY_NODE_ID[] = "3001";   // Unique four-character ID for this node 0xxx repeater 1xxx gps 2xxx temperature 3xxx navigator
+const char MY_NODE_ID[] = "0001";   // Unique four-character ID for this node 0xxx repeater 1xxx gps 2xxx temperature 3xxx navigator
 const char DEST_NODE_ID[] = "9999"; // "9999" broadcasts to all nodes
 const char BROADCAST_NODE_ID[] = "9999";
 const int NETWORK_HOPS = 3;         // Maximum number of mesh hops
@@ -57,5 +59,6 @@ const int REPEAT_RSSI_WEAK_DBM = -120;   // Weak signals receive the shortest de
 const int REPEAT_RSSI_STRONG_DBM = -60;  // Strong signals receive the longest delay
 const unsigned long RECEIVE_DISPLAY_TIMEOUT_MS = 300000; // Keep received data visible for five minutes
 const unsigned long SEND_INTERVAL_MS = 60000; // Send interval in milliseconds
+const unsigned long SENSORLESS_SEND_INTERVAL_MS = 300000; // Send every five minutes when no GPS or temperature sensor is available
 
 #endif // LORA_REPEATHER_CONFIG_H

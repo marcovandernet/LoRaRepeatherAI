@@ -178,7 +178,10 @@ void loop() {
   }
 
   // 3. Automatisch periodiek eigen data verzenden naar het Mesh-netwerk
-  if (millis() - lastSendTime > SEND_INTERVAL_MS) {
+  unsigned long sendInterval = (ds18b20Beschikbaar || isGPSAvailable())
+      ? SEND_INTERVAL_MS
+      : SENSORLESS_SEND_INTERVAL_MS;
+  if (millis() - lastSendTime > sendInterval) {
     lastSendTime = millis();
     
     String payload = "";
